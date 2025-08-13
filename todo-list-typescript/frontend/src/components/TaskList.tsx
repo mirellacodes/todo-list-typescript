@@ -22,9 +22,11 @@ type Props = {
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
   onDelete: (id: string) => void;
   onEdit: (id: string, newTitle: string) => void;
+  onToggleCompletion: (id: string) => void;
+  animatingTasks: Set<string>;
 };
 
-const TaskList: React.FC<Props> = ({ tasks, setTasks, onDelete, onEdit }) => {
+const TaskList: React.FC<Props> = ({ tasks, setTasks, onDelete, onEdit, onToggleCompletion, animatingTasks }) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -62,7 +64,15 @@ const TaskList: React.FC<Props> = ({ tasks, setTasks, onDelete, onEdit }) => {
     >
       <SortableContext items={tasks} strategy={verticalListSortingStrategy}>
         {tasks.map((task, index) => (
-          <TaskItem key={task.id} task={task} index={index} onDelete={onDelete} onEdit={onEdit} />
+          <TaskItem 
+            key={task.id} 
+            task={task} 
+            index={index} 
+            onDelete={onDelete} 
+            onEdit={onEdit} 
+            onToggleCompletion={onToggleCompletion}
+            isAnimating={animatingTasks.has(task.id)}
+          />
         ))}
       </SortableContext>
     </DndContext>

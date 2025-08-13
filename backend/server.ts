@@ -11,6 +11,7 @@ app.use(express.json());
 type Task = {
   id: string;
   title: string;
+  completed: boolean;
 };
 
 let tasks: Task[] = [];
@@ -19,7 +20,7 @@ app.get("/tasks", (_, res) => res.json(tasks));
 
 app.post("/tasks", (req, res) => {
   const { title } = req.body;
-  const newTask = { id: uuidv4(), title };
+  const newTask = { id: uuidv4(), title, completed: false };
   tasks.push(newTask);
   res.status(201).json(newTask);
 });
@@ -27,8 +28,30 @@ app.post("/tasks", (req, res) => {
 app.put("/tasks/:id", (req, res) => {
   const { id } = req.params;
   const { title } = req.body;
-  tasks = tasks.map((task) => (task.id === id ? { ...task, title } : task));
-  res.json({ id, title });
+  
+  if (!title || typeof title !== 'string') {
+    return res.status(400).json({ error: 'Title is required and must be a string' });
+  }
+  
+  const task = tasks.find(task => task.id === id);
+  if (!task) {
+    return res.status(404).json({ error: 'Task not found' });
+  }
+  
+  task.title = title;
+  res.json(task);
+});
+
+app.patch("/tasks/:id/toggle", (req, res) => {
+  const { id } = req.params;
+  const task = tasks.find(task => task.id === id);
+  
+  if (!task) {
+    return res.status(404).json({ error: 'Task not found' });
+  }
+  
+  task.completed = !task.completed;
+  res.json(task);
 });
 
 app.delete("/tasks/:id", (req, res) => {
