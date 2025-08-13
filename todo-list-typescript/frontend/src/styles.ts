@@ -10,6 +10,20 @@ export const GlobalStyle = createGlobalStyle`
     justify-content: center;
     padding: 2rem;
   }
+
+  /* Ensure drag and drop works properly */
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Fix for react-beautiful-dnd in React 18 */
+  [data-rbd-droppable-id] {
+    min-height: 50px;
+  }
+
+  [data-rbd-draggable-id] {
+    touch-action: none;
+  }
 `;
 
 export const NeonButton = styled.button`

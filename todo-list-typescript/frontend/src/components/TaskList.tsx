@@ -1,5 +1,19 @@
 import React from 'react';
-import { DragDropContext, Droppable, type DropResult } from 'react-beautiful-dnd';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import TaskItem from './TaskItem';
 import type { Task } from '../types';
 
@@ -7,32 +21,51 @@ type Props = {
   tasks: Task[];
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
   onDelete: (id: string) => void;
+  onEdit: (id: string, newTitle: string) => void;
 };
 
-const TaskList: React.FC<Props> = ({ tasks, setTasks, onDelete }) => {
-  const handleDrag = (result: DropResult) => {
-    if (!result.destination) return;
+const TaskList: React.FC<Props> = ({ tasks, setTasks, onDelete, onEdit }) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
-    const reordered = [...tasks];
-    const [removed] = reordered.splice(result.source.index, 1);
-    reordered.splice(result.destination.index, 0, removed);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
-    setTasks(reordered);
+    if (active.id !== over?.id) {
+      setTasks((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over?.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
+  // Don't render drag and drop if no tasks
+  if (tasks.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+        No tasks yet. Add one above!
+      </div>
+    );
+  }
+
   return (
-    <DragDropContext onDragEnd={handleDrag}>
-      <Droppable droppableId="tasks">
-        {(provided) => (
-          <div {...provided.droppableProps} ref={provided.innerRef}>
-            {tasks.map((task, index) => (
-              <TaskItem key={task.id} task={task} index={index} onDelete={onDelete} />
-            ))}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-    </DragDropContext>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext items={tasks} strategy={verticalListSortingStrategy}>
+        {tasks.map((task, index) => (
+          <TaskItem key={task.id} task={task} index={index} onDelete={onDelete} onEdit={onEdit} />
+        ))}
+      </SortableContext>
+    </DndContext>
   );
 };
 

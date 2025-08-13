@@ -22,21 +22,25 @@ const App: React.FC = () => {
   };
 
   const deleteTask = async (id: string) => {
-    toast((t) => (
-      <span>
-        Confirm delete?
-        <NeonButton
-          onClick={async () => {
-            await axios.delete(`http://localhost:5000/tasks/${id}`);
-            setTasks(tasks.filter((t) => t.id !== id));
-            toast.dismiss(t.id);
-          }}
-        >
-          Yes
-        </NeonButton>
-        <NeonButton onClick={() => toast.dismiss(t.id)}>Cancel</NeonButton>
-      </span>
-    ));
+    console.log('Delete task called with id:', id);
+    try {
+      await axios.delete(`http://localhost:5000/tasks/${id}`);
+      setTasks(tasks.filter((t) => t.id !== id));
+      console.log('Task deleted successfully');
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
+
+  const editTask = async (id: string, newTitle: string) => {
+    if (!newTitle.trim()) return;
+    try {
+      const res = await axios.put<Task>(`http://localhost:5000/tasks/${id}`, { title: newTitle });
+      setTasks(tasks.map((t) => (t.id === id ? res.data : t)));
+      console.log('Task edited successfully');
+    } catch (error) {
+      console.error('Error editing task:', error);
+    }
   };
 
   useEffect(() => {
@@ -58,7 +62,7 @@ const App: React.FC = () => {
           />
           <NeonButton onClick={addTask}>Add</NeonButton>
         </div>
-        <TaskList tasks={tasks} setTasks={setTasks} onDelete={deleteTask} />
+        <TaskList tasks={tasks} setTasks={setTasks} onDelete={deleteTask} onEdit={editTask} />
       </div>
     </>
   );
