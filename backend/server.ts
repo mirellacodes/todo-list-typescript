@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { v4 as uuidv4 } from "uuid";
+import { initDatabase, db } from "./db";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -8,58 +9,112 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Root route for health check
+app.get("/", (_, res) => {
+  res.json({ 
+    message: "🚀 Todo List API is running!", 
+    status: "healthy",
+    endpoints: {
+      tasks: "/tasks",
+      health: "/"
+    }
+  });
+});
+
 type Task = {
   id: string;
   title: string;
   completed: boolean;
 };
 
-let tasks: Task[] = [];
-
-app.get("/tasks", (_, res) => res.json(tasks));
-
-app.post("/tasks", (req, res) => {
-  const { title } = req.body;
-  const newTask = { id: uuidv4(), title, completed: false };
-  tasks.push(newTask);
-  res.status(201).json(newTask);
-});
-
-app.put("/tasks/:id", (req, res) => {
-  const { id } = req.params;
-  const { title } = req.body;
-  
-  if (!title || typeof title !== 'string') {
-    return res.status(400).json({ error: 'Title is required and must be a string' });
+app.get("/tasks", async (_, res) => {
+  try {
+    const tasks = await db.getAllTasks();
+    res.json(tasks);
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
   }
-  
-  const task = tasks.find(task => task.id === id);
-  if (!task) {
-    return res.status(404).json({ error: 'Task not found' });
+});
+
+app.post("/tasks", async (req, res) => {
+  try {
+    const { title } = req.body;
+    if (!title || typeof title !== 'string') {
+      return res.status(400).json({ error: 'Title is required and must be a string' });
+    }
+    
+    const id = uuidv4();
+    const newTask = await db.createTask(id, title);
+    res.status(201).json(newTask);
+  } catch (error) {
+    console.error('Error creating task:', error);
+    res.status(500).json({ error: 'Failed to create task' });
   }
-  
-  task.title = title;
-  res.json(task);
 });
 
-app.patch("/tasks/:id/toggle", (req, res) => {
-  const { id } = req.params;
-  const task = tasks.find(task => task.id === id);
-  
-  if (!task) {
-    return res.status(404).json({ error: 'Task not found' });
+app.put("/tasks/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title } = req.body;
+    
+    if (!title || typeof title !== 'string') {
+      return res.status(400).json({ error: 'Title is required and must be a string' });
+    }
+    
+    const task = await db.getTaskById(id);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    const updatedTask = await db.updateTask(id, title);
+    res.json(updatedTask);
+  } catch (error) {
+    console.error('Error updating task:', error);
+    res.status(500).json({ error: 'Failed to update task' });
   }
-  
-  task.completed = !task.completed;
-  res.json(task);
 });
 
-app.delete("/tasks/:id", (req, res) => {
-  const { id } = req.params;
-  tasks = tasks.filter((task) => task.id !== id);
-  res.status(204).send();
+app.patch("/tasks/:id/toggle", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const task = await db.getTaskById(id);
+    
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    const updatedTask = await db.toggleTask(id);
+    res.json(updatedTask);
+  } catch (error) {
+    console.error('Error toggling task:', error);
+    res.status(500).json({ error: 'Failed to toggle task' });
+  }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+app.delete("/tasks/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const task = await db.getTaskById(id);
+    
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    await db.deleteTask(id);
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+app.listen(PORT, async () => {
+  try {
+    await initDatabase();
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
 });
