@@ -111,12 +111,21 @@ app.delete("/tasks/:id", async (req, res) => {
   }
 });
 
-app.listen(PORT, async () => {
-  try {
-    await initDatabase();
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-});
+// Initialize database for serverless environment
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, async () => {
+    try {
+      await initDatabase();
+      console.log(`🚀 Server running at http://localhost:${PORT}`);
+    } catch (error) {
+      console.error('Failed to start server:', error);
+      process.exit(1);
+    }
+  });
+} else {
+  // For Vercel serverless, initialize database on first request
+  initDatabase().catch(console.error);
+}
+
+// Export the app for Vercel serverless
+export default app;
