@@ -6,18 +6,18 @@
       "use": "@vercel/node"
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/",
-      "dest": "server.ts"
+      "source": "/",
+      "destination": "/server.ts"
     },
     {
-      "src": "/tasks(.*)",
-      "dest": "server.ts"
+      "source": "/tasks/:path*",
+      "destination": "/server.ts"
     },
     {
-      "src": "/(.*)",
-      "dest": "server.ts"
+      "source": "/(.*)",
+      "destination": "/server.ts"
     }
   ]
 }
