@@ -7,6 +7,7 @@
     "dev": "ts-node server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "vercel-build": "tsc",
     "db:setup": "echo 'Set DATABASE_URL environment variable and restart server'"
   },
   "keywords": [],
