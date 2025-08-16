@@ -4,6 +4,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import TaskList from './components/TaskList';
 import { GlobalStyle, NeonButton, Input } from './styles';
 import type { Task } from './types';
+import { API_ENDPOINTS } from './config';
 
 const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -12,24 +13,33 @@ const App: React.FC = () => {
   const [animatingTasks, setAnimatingTasks] = useState<Set<string>>(new Set());
 
   const fetchTasks = async () => {
-    const res = await axios.get<Task[]>('http://localhost:5000/tasks');
+    const res = await axios.get<Task[]>(API_ENDPOINTS.TASKS);
     setTasks(res.data);
   };
 
   const addTask = async () => {
     if (!newTask.trim()) return;
-    const res = await axios.post<Task>('http://localhost:5000/tasks', { title: newTask });
-    setTasks([...tasks, res.data]);
-    setNewTask('');
+    
+    try {
+      const res = await axios.post<Task>(API_ENDPOINTS.TASKS, { title: newTask });
+      setTasks([...tasks, res.data]);
+      setNewTask('');
+      toast.success('Task added successfully!');
+    } catch (error) {
+      toast.error('Failed to add task. Please try again.');
+      console.error('Error adding task:', error);
+    }
   };
 
   const deleteTask = async (id: string) => {
     console.log('Delete task called with id:', id);
     try {
-      await axios.delete(`http://localhost:5000/tasks/${id}`);
+      await axios.delete(API_ENDPOINTS.TASK(id));
       setTasks(tasks.filter((t) => t.id !== id));
+      toast.success('Task deleted successfully!');
       console.log('Task deleted successfully');
     } catch (error) {
+      toast.error('Failed to delete task. Please try again.');
       console.error('Error deleting task:', error);
     }
   };
@@ -37,17 +47,19 @@ const App: React.FC = () => {
   const editTask = async (id: string, newTitle: string) => {
     if (!newTitle.trim()) return;
     try {
-      const res = await axios.put<Task>(`http://localhost:5000/tasks/${id}`, { title: newTitle });
+      const res = await axios.put<Task>(API_ENDPOINTS.TASK(id), { title: newTitle });
       setTasks(tasks.map((t) => (t.id === id ? res.data : t)));
+      toast.success('Task updated successfully!');
       console.log('Task edited successfully');
     } catch (error) {
+      toast.error('Failed to update task. Please try again.');
       console.error('Error editing task:', error);
     }
   };
 
   const toggleTaskCompletion = async (id: string) => {
     try {
-      const res = await axios.patch<Task>(`http://localhost:5000/tasks/${id}/toggle`);
+      const res = await axios.patch<Task>(API_ENDPOINTS.TOGGLE_TASK(id));
       
       // If task is completed and we're not showing completed tasks, trigger animation FIRST
       if (res.data.completed && !showCompleted) {
@@ -69,16 +81,20 @@ const App: React.FC = () => {
             return newSet;
           });
         }, 1250); // Slightly longer than animation duration (1.2s) to ensure smooth transition
-      } else {
-        // Normal task update without animation
-        setTasks(prevTasks => {
-          const updatedTasks = prevTasks.map((t) => (t.id === id ? res.data : t));
-          return updatedTasks;
-        });
+              } else {
+          // Normal task update without animation
+          setTasks(prevTasks => {
+            const updatedTasks = prevTasks.map((t) => (t.id === id ? res.data : t));
+            return updatedTasks;
+          });
+        }
+        
+        const action = res.data.completed ? 'completed' : 'uncompleted';
+        toast.success(`Task marked as ${action}!`);
+      } catch (error) {
+        toast.error('Failed to update task status. Please try again.');
+        console.error('Error toggling task completion:', error);
       }
-    } catch (error) {
-      console.error('Error toggling task completion:', error);
-    }
   };
 
   // Include animating tasks in filtered tasks to keep them visible during animation
