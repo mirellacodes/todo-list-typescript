@@ -21,7 +21,10 @@
     "noUnusedParameters": false,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    
+    /* Explicit types */
+    "types": ["react", "react-dom"]
   },
   "include": ["src"]
 }
