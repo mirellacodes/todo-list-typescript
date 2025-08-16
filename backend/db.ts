@@ -15,11 +15,17 @@ export const initDatabase = async () => {
     await client.query(`
       CREATE TABLE IF NOT EXISTS tasks (
         id VARCHAR(255) PRIMARY KEY,
+        session_id VARCHAR(255) NOT NULL,
         title TEXT NOT NULL,
         completed BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+    
+    // Create index on session_id for better performance
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_tasks_session_id ON tasks(session_id);
     `);
     
     client.release();
@@ -32,47 +38,53 @@ export const initDatabase = async () => {
 
 // Database operations
 export const db = {
-  // Get all tasks
-  getAllTasks: async () => {
-    const result = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
+  // Get all tasks for a specific session
+  getAllTasks: async (sessionId: string) => {
+    const result = await pool.query(
+      'SELECT * FROM tasks WHERE session_id = $1 ORDER BY created_at DESC',
+      [sessionId]
+    );
     return result.rows;
   },
 
   // Create a new task
-  createTask: async (id: string, title: string) => {
+  createTask: async (id: string, sessionId: string, title: string) => {
     const result = await pool.query(
-      'INSERT INTO tasks (id, title) VALUES ($1, $2) RETURNING *',
-      [id, title]
+      'INSERT INTO tasks (id, session_id, title) VALUES ($1, $2, $3) RETURNING *',
+      [id, sessionId, title]
     );
     return result.rows[0];
   },
 
   // Update task title
-  updateTask: async (id: string, title: string) => {
+  updateTask: async (id: string, sessionId: string, title: string) => {
     const result = await pool.query(
-      'UPDATE tasks SET title = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
-      [title, id]
+      'UPDATE tasks SET title = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND session_id = $3 RETURNING *',
+      [title, id, sessionId]
     );
     return result.rows[0];
   },
 
   // Toggle task completion
-  toggleTask: async (id: string) => {
+  toggleTask: async (id: string, sessionId: string) => {
     const result = await pool.query(
-      'UPDATE tasks SET completed = NOT completed, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
-      [id]
+      'UPDATE tasks SET completed = NOT completed, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND session_id = $2 RETURNING *',
+      [id, sessionId]
     );
     return result.rows[0];
   },
 
   // Delete a task
-  deleteTask: async (id: string) => {
-    await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
+  deleteTask: async (id: string, sessionId: string) => {
+    await pool.query('DELETE FROM tasks WHERE id = $1 AND session_id = $2', [id, sessionId]);
   },
 
-  // Get task by ID
-  getTaskById: async (id: string) => {
-    const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [id]);
+  // Get task by ID (within session)
+  getTaskById: async (id: string, sessionId: string) => {
+    const result = await pool.query(
+      'SELECT * FROM tasks WHERE id = $1 AND session_id = $2',
+      [id, sessionId]
+    );
     return result.rows[0];
   }
 };
