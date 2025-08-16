@@ -4,6 +4,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import TaskList from './components/TaskList';
 import { GlobalStyle, NeonButton, Input } from './styles';
 import type { Task } from './types';
+import { API_ENDPOINTS } from './config';
 
 const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -12,7 +13,7 @@ const App: React.FC = () => {
   const [animatingTasks, setAnimatingTasks] = useState<Set<string>>(new Set());
 
   const fetchTasks = async () => {
-    const res = await axios.get<Task[]>('http://localhost:5000/tasks');
+    const res = await axios.get<Task[]>(API_ENDPOINTS.TASKS);
     setTasks(res.data);
   };
 
@@ -20,7 +21,7 @@ const App: React.FC = () => {
     if (!newTask.trim()) return;
     
     try {
-      const res = await axios.post<Task>('http://localhost:5000/tasks', { title: newTask });
+      const res = await axios.post<Task>(API_ENDPOINTS.TASKS, { title: newTask });
       setTasks([...tasks, res.data]);
       setNewTask('');
       toast.success('Task added successfully!');
@@ -33,7 +34,7 @@ const App: React.FC = () => {
   const deleteTask = async (id: string) => {
     console.log('Delete task called with id:', id);
     try {
-      await axios.delete(`http://localhost:5000/tasks/${id}`);
+      await axios.delete(API_ENDPOINTS.TASK(id));
       setTasks(tasks.filter((t) => t.id !== id));
       toast.success('Task deleted successfully!');
       console.log('Task deleted successfully');
@@ -46,7 +47,7 @@ const App: React.FC = () => {
   const editTask = async (id: string, newTitle: string) => {
     if (!newTitle.trim()) return;
     try {
-      const res = await axios.put<Task>(`http://localhost:5000/tasks/${id}`, { title: newTitle });
+      const res = await axios.put<Task>(API_ENDPOINTS.TASK(id), { title: newTitle });
       setTasks(tasks.map((t) => (t.id === id ? res.data : t)));
       toast.success('Task updated successfully!');
       console.log('Task edited successfully');
@@ -58,7 +59,7 @@ const App: React.FC = () => {
 
   const toggleTaskCompletion = async (id: string) => {
     try {
-      const res = await axios.patch<Task>(`http://localhost:5000/tasks/${id}/toggle`);
+      const res = await axios.patch<Task>(API_ENDPOINTS.TOGGLE_TASK(id));
       
       // If task is completed and we're not showing completed tasks, trigger animation FIRST
       if (res.data.completed && !showCompleted) {
