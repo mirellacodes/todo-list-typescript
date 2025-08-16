@@ -153,6 +153,25 @@ const App: React.FC = () => {
           border: '1px solid #333'
         }}>
           🆔 Session: {sessionId.substring(0, 20)}...
+          <br />
+          <button 
+            onClick={() => {
+              const newSessionId = SessionManager.forceNewSession();
+              window.location.reload(); // Reload to use new session
+            }}
+            style={{
+              marginTop: '5px',
+              padding: '5px 10px',
+              fontSize: '10px',
+              backgroundColor: '#333',
+              color: '#fff',
+              border: '1px solid #555',
+              borderRadius: '3px',
+              cursor: 'pointer'
+            }}
+          >
+            🔄 New Session
+          </button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #333' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
