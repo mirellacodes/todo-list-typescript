@@ -4,24 +4,31 @@ import toast, { Toaster } from 'react-hot-toast';
 import TaskList from './components/TaskList';
 import { GlobalStyle, NeonButton, Input } from './styles';
 import type { Task } from './types';
-import { API_ENDPOINTS } from './config';
+import { API_ENDPOINTS, createApiConfig } from './config';
+import { SessionManager } from './utils/sessionManager';
 
 const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
   const [showCompleted, setShowCompleted] = useState(true);
   const [animatingTasks, setAnimatingTasks] = useState<Set<string>>(new Set());
+  const [sessionId] = useState(() => SessionManager.getSessionId());
 
   const fetchTasks = async () => {
-    const res = await axios.get<Task[]>(API_ENDPOINTS.TASKS);
-    setTasks(res.data);
+    try {
+      const res = await axios.get<Task[]>(API_ENDPOINTS.TASKS, createApiConfig(sessionId));
+      setTasks(res.data);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      toast.error('Failed to fetch tasks. Please try again.');
+    }
   };
 
   const addTask = async () => {
     if (!newTask.trim()) return;
     
     try {
-      const res = await axios.post<Task>(API_ENDPOINTS.TASKS, { title: newTask });
+      const res = await axios.post<Task>(API_ENDPOINTS.TASKS, { title: newTask }, createApiConfig(sessionId));
       setTasks([...tasks, res.data]);
       setNewTask('');
       toast.success('Task added successfully!');
@@ -34,7 +41,7 @@ const App: React.FC = () => {
   const deleteTask = async (id: string) => {
     console.log('Delete task called with id:', id);
     try {
-      await axios.delete(API_ENDPOINTS.TASK(id));
+      await axios.delete(API_ENDPOINTS.TASK(id), createApiConfig(sessionId));
       setTasks(tasks.filter((t) => t.id !== id));
       toast.success('Task deleted successfully!');
       console.log('Task deleted successfully');
@@ -47,7 +54,7 @@ const App: React.FC = () => {
   const editTask = async (id: string, newTitle: string) => {
     if (!newTitle.trim()) return;
     try {
-      const res = await axios.put<Task>(API_ENDPOINTS.TASK(id), { title: newTitle });
+      const res = await axios.put<Task>(API_ENDPOINTS.TASK(id), { title: newTitle }, createApiConfig(sessionId));
       setTasks(tasks.map((t) => (t.id === id ? res.data : t)));
       toast.success('Task updated successfully!');
       console.log('Task edited successfully');
@@ -59,7 +66,7 @@ const App: React.FC = () => {
 
   const toggleTaskCompletion = async (id: string) => {
     try {
-      const res = await axios.patch<Task>(API_ENDPOINTS.TOGGLE_TASK(id));
+      const res = await axios.patch<Task>(API_ENDPOINTS.TOGGLE_TASK(id), {}, createApiConfig(sessionId));
       
       // If task is completed and we're not showing completed tasks, trigger animation FIRST
       if (res.data.completed && !showCompleted) {
@@ -132,6 +139,21 @@ const App: React.FC = () => {
           onToggleCompletion={toggleTaskCompletion}
           animatingTasks={animatingTasks}
         />
+        
+        {/* Session Info */}
+        <div style={{ 
+          textAlign: 'center', 
+          fontSize: '12px', 
+          color: '#666', 
+          marginTop: '10px',
+          fontFamily: 'monospace',
+          padding: '10px',
+          backgroundColor: '#1a1a1a',
+          borderRadius: '5px',
+          border: '1px solid #333'
+        }}>
+          🆔 Session: {sessionId.substring(0, 20)}...
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #333' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input
