@@ -4,7 +4,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import TaskList from './components/TaskList';
 import { GlobalStyle, NeonButton, Input } from './styles';
 import type { Task } from './types';
-import { API_ENDPOINTS, createApiConfig } from './config';
+import { API_ENDPOINTS, createApiConfig, addSessionToUrl } from './config';
 import { SessionManager } from './utils/sessionManager';
 
 const App: React.FC = () => {
@@ -16,7 +16,8 @@ const App: React.FC = () => {
 
   const fetchTasks = async () => {
     try {
-      const res = await axios.get<Task[]>(API_ENDPOINTS.TASKS, createApiConfig(sessionId));
+      const url = addSessionToUrl(API_ENDPOINTS.TASKS, sessionId);
+      const res = await axios.get<Task[]>(url, createApiConfig(sessionId));
       setTasks(res.data);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -28,7 +29,8 @@ const App: React.FC = () => {
     if (!newTask.trim()) return;
     
     try {
-      const res = await axios.post<Task>(API_ENDPOINTS.TASKS, { title: newTask }, createApiConfig(sessionId));
+      const url = addSessionToUrl(API_ENDPOINTS.TASKS, sessionId);
+      const res = await axios.post<Task>(url, { title: newTask }, createApiConfig(sessionId));
       setTasks([...tasks, res.data]);
       setNewTask('');
       toast.success('Task added successfully!');
@@ -41,7 +43,8 @@ const App: React.FC = () => {
   const deleteTask = async (id: string) => {
     console.log('Delete task called with id:', id);
     try {
-      await axios.delete(API_ENDPOINTS.TASK(id), createApiConfig(sessionId));
+      const url = addSessionToUrl(API_ENDPOINTS.TASK(id), sessionId);
+      await axios.delete(url, createApiConfig(sessionId));
       setTasks(tasks.filter((t) => t.id !== id));
       toast.success('Task deleted successfully!');
       console.log('Task deleted successfully');
@@ -54,7 +57,8 @@ const App: React.FC = () => {
   const editTask = async (id: string, newTitle: string) => {
     if (!newTitle.trim()) return;
     try {
-      const res = await axios.put<Task>(API_ENDPOINTS.TASK(id), { title: newTitle }, createApiConfig(sessionId));
+      const url = addSessionToUrl(API_ENDPOINTS.TASK(id), sessionId);
+      const res = await axios.put<Task>(url, { title: newTitle }, createApiConfig(sessionId));
       setTasks(tasks.map((t) => (t.id === id ? res.data : t)));
       toast.success('Task updated successfully!');
       console.log('Task edited successfully');
@@ -66,7 +70,8 @@ const App: React.FC = () => {
 
   const toggleTaskCompletion = async (id: string) => {
     try {
-      const res = await axios.patch<Task>(API_ENDPOINTS.TOGGLE_TASK(id), {}, createApiConfig(sessionId));
+      const url = addSessionToUrl(API_ENDPOINTS.TOGGLE_TASK(id), sessionId);
+      const res = await axios.patch<Task>(url, {}, createApiConfig(sessionId));
       
       // If task is completed and we're not showing completed tasks, trigger animation FIRST
       if (res.data.completed && !showCompleted) {

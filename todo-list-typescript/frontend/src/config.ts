@@ -12,7 +12,12 @@ export const API_ENDPOINTS = {
 // Session-aware API functions
 export const createApiConfig = (sessionId: string) => ({
   headers: {
-    'Content-Type': 'application/json',
-    'x-session-id': sessionId
+    'Content-Type': 'application/json'
   }
 });
+
+// Add session ID to URL
+export const addSessionToUrl = (url: string, sessionId: string) => {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}session=${sessionId}`;
+};

@@ -16,9 +16,9 @@ app.use(express.json());
 
 // Helper function to get session ID from request
 const getSessionId = (req: Request): string => {
-  const sessionId = req.headers['x-session-id'] as string;
+  const sessionId = req.query.session as string;
   if (!sessionId) {
-    throw new Error('Session ID is required in x-session-id header');
+    throw new Error('Session ID is required in query parameter: ?session=YOUR_SESSION_ID');
   }
   return sessionId;
 };
