@@ -8,6 +8,14 @@
   ],
   "routes": [
     {
+      "src": "/",
+      "dest": "server.ts"
+    },
+    {
+      "src": "/tasks(.*)",
+      "dest": "server.ts"
+    },
+    {
       "src": "/(.*)",
       "dest": "server.ts"
     }
