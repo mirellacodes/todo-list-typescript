@@ -18,9 +18,16 @@ const App: React.FC = () => {
 
   const addTask = async () => {
     if (!newTask.trim()) return;
-    const res = await axios.post<Task>('http://localhost:5000/tasks', { title: newTask });
-    setTasks([...tasks, res.data]);
-    setNewTask('');
+    
+    try {
+      const res = await axios.post<Task>('http://localhost:5000/tasks', { title: newTask });
+      setTasks([...tasks, res.data]);
+      setNewTask('');
+      toast.success('Task added successfully!');
+    } catch (error) {
+      toast.error('Failed to add task. Please try again.');
+      console.error('Error adding task:', error);
+    }
   };
 
   const deleteTask = async (id: string) => {
@@ -28,8 +35,10 @@ const App: React.FC = () => {
     try {
       await axios.delete(`http://localhost:5000/tasks/${id}`);
       setTasks(tasks.filter((t) => t.id !== id));
+      toast.success('Task deleted successfully!');
       console.log('Task deleted successfully');
     } catch (error) {
+      toast.error('Failed to delete task. Please try again.');
       console.error('Error deleting task:', error);
     }
   };
@@ -39,8 +48,10 @@ const App: React.FC = () => {
     try {
       const res = await axios.put<Task>(`http://localhost:5000/tasks/${id}`, { title: newTitle });
       setTasks(tasks.map((t) => (t.id === id ? res.data : t)));
+      toast.success('Task updated successfully!');
       console.log('Task edited successfully');
     } catch (error) {
+      toast.error('Failed to update task. Please try again.');
       console.error('Error editing task:', error);
     }
   };
@@ -69,16 +80,20 @@ const App: React.FC = () => {
             return newSet;
           });
         }, 1250); // Slightly longer than animation duration (1.2s) to ensure smooth transition
-      } else {
-        // Normal task update without animation
-        setTasks(prevTasks => {
-          const updatedTasks = prevTasks.map((t) => (t.id === id ? res.data : t));
-          return updatedTasks;
-        });
+              } else {
+          // Normal task update without animation
+          setTasks(prevTasks => {
+            const updatedTasks = prevTasks.map((t) => (t.id === id ? res.data : t));
+            return updatedTasks;
+          });
+        }
+        
+        const action = res.data.completed ? 'completed' : 'uncompleted';
+        toast.success(`Task marked as ${action}!`);
+      } catch (error) {
+        toast.error('Failed to update task status. Please try again.');
+        console.error('Error toggling task completion:', error);
       }
-    } catch (error) {
-      console.error('Error toggling task completion:', error);
-    }
   };
 
   // Include animating tasks in filtered tasks to keep them visible during animation
