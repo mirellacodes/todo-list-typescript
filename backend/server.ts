@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Root route for health check
+// Root route for health check - URGENT FIX
 app.get("/", (_, res) => {
   res.json({ 
     message: "🚀 Todo List API is running!", 
